@@ -57,12 +57,8 @@ public:
 
 	virtual int next()
 	{
-		//uint v1 = _bcuY * (_bcuW * 4);
-		//uint v2 = _bcuX * 2;
-		//uint v3 = (BCUmap[_innerbcuIdx] > 1) * _bcuW * 2;
-		//uint v4 = (BCUmap[_innerbcuIdx] % 2);
-		_currentHcuW = _info.Cycles[_HcuPos].W;
-		_currentHcuH = _info.Cycles[_HcuPos].H;
+		_currentHcuW = _info._image.Cycles[_HcuPos].W;
+		_currentHcuH = _info._image.Cycles[_HcuPos].H;
 
 		int ret = _info._image.blocks[_addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2 + (BCUmap[_innerbcuIdx] > 1) * _bcuW * 2 + (BCUmap[_innerbcuIdx] % 2)][BCUmap2[_innerbcuIdx]][0];
 		//		所有MCU              |偏移|  |          行          |  |   列   |   |              在BCU中的列            |  |       在BCU中的行       ||     在BCU中的通道   ||DC|
@@ -91,9 +87,9 @@ public:
 			_bcuY++;
 		}
 
-		if ((_HcuPos % _info.HCU_Width) == 0 && _HcuPos)
+		if ((_HcuPos % _info._image.HCU_Width) == 0 && _HcuPos)
 		{
-			_addW = (_HcuPos / (_info.HCU_Width - 1)) * (_bcuW * _info.Cycles[_HcuPos - 1].H * 4);
+			_addW = (_HcuPos / (_info._image.HCU_Width - 1)) * (_bcuW * _info._image.Cycles[_HcuPos - 1].H * 4);
 		}
 
 		return ret;
@@ -140,8 +136,8 @@ public:
 
 	virtual int next()
 	{
-		_currentHcuW = _info.Cycles[_HcuPos].W;
-		_currentHcuH = _info.Cycles[_HcuPos].H;
+		_currentHcuW = _info._image.Cycles[_HcuPos].W;
+		_currentHcuH = _info._image.Cycles[_HcuPos].H;
 
 		int ret = _info._image.blocks[_addW + _bcuY * (_bcuW * 4) + _bcuX * 2 + (BCUmap[_innerBcuIdx] > 1) * _bcuW * 2 + (BCUmap[_innerBcuIdx] % 2)][BCUmap2[_innerBcuIdx]][zigZagMap[_innerMcuIdx]];
 		//		所有MCU               |偏移| |        行       |   |    列   |  |             在BCU中的列            |   |       在BCU中的行       ||     在BCU中的通道   || 在MCU中的序号(zigzag) |
@@ -175,9 +171,9 @@ public:
 			_bcuY++;
 		}
 
-		if ((_HcuPos % _info.HCU_Width) == 0 && _HcuPos)
+		if ((_HcuPos % _info._image.HCU_Width) == 0 && _HcuPos)
 		{
-			_addW = (_HcuPos / (_info.HCU_Width - 1)) * (_bcuW * _info.Cycles[_HcuPos - 1].H * 4);
+			_addW = (_HcuPos / (_info._image.HCU_Width - 1)) * (_bcuW * _info._image.Cycles[_HcuPos - 1].H * 4);
 		}
 
 		return ret;
@@ -189,6 +185,79 @@ public:
 		printf("AC: %d\n", next());
 	}
 };
+
+void reSampleBlock(BMPImage& image)
+{
+	uint _curPos = 0;				//当前访问的MCU位置
+	uint _limit = 0;				//这个图片总共有多少DC值
+	uint _bcuX = 0;					//当前游标所在的BCU横向位置
+	uint _bcuY = 0;					//当前游标所在的BCU纵向位置
+	uint _bcuW = 0;					//图片的BCU宽度
+	uint _bcuH = 0;					//图片的BCU高度
+
+	uint _addW = 0;
+	uint _currentHcuW = 0;
+	uint _currentHcuH = 0;
+	uint _HcuPos = 0;
+
+	_bcuH = image.blockHeight / 2;
+	_bcuW = image.blockWidth / 2;
+	_limit = (_bcuW * _bcuH);
+
+	int tmp[64]{};
+
+	while (_curPos < _limit)
+	{
+		_currentHcuW = image.Cycles[_HcuPos].W;
+		_currentHcuH = image.Cycles[_HcuPos].H;
+
+		Range(2, c)//Cb/Cr
+		{
+			Range(2, m)//BCU横向
+			{
+				Range(2, n)//BCU纵向
+				{
+					uint idx0 = _addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2 + m * _bcuW * 2 + n;
+					int* src = image.blocks[idx0][c + 1];
+					Range(4, y)
+					{
+						Range(4, x)
+						{
+							uint idx1 = m * 32 + n * 4 + y * 8 + x % 8;
+							uint idx2 = (y * 2 + c) * 8 + x * 2;
+							tmp[idx1] = src[idx2];
+						}
+					}
+				}
+			}
+			memcpy_s(image.blocks[_addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2][c + 1], 64 * sizeof(int), tmp, 64 * sizeof(int));
+		}
+		image.blocks[_addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2].isbase = true;
+
+		_curPos++;
+		_bcuX++;
+
+		if (_bcuY >= _currentHcuH - 1 && _bcuX > _currentHcuW - 1)
+		{
+			_bcuX = 0;
+			_bcuY = 0;
+			_HcuPos++;
+
+			_addW += 32;
+		}
+
+		if (_bcuX > _currentHcuW - 1)
+		{
+			_bcuX = 0;
+			_bcuY++;
+		}
+
+		if ((_HcuPos % image.HCU_Width) == 0 && _HcuPos)
+		{
+			_addW = (_HcuPos / (image.HCU_Width - 1)) * (_bcuW * image.Cycles[_HcuPos - 1].H * 4);
+		}
+	}
+}
 
 void DebugPrintPixels(JBPDImage& image)
 {
@@ -290,37 +359,8 @@ JBPDImage BuildTrees(BMPImage& image)
 {
 	JBPDImage ret(image);
 
-	ret.HCU_Height = (image.blockHeight + 31) / 32;
-	ret.HCU_Width = (image.blockWidth + 31) / 32;
-	ret.Cycles = new HCUCycle[ret.HCU_Height * ret.HCU_Width + 1]{};
-	ret.HCU_Count = ret.HCU_Height * ret.HCU_Width;
-
-	for (uint i = 0; i < ret.HCU_Count; ++i)
-	{
-		if (((i+1)%ret.HCU_Width) == 0)
-		{
-			ret.Cycles[i].W = (image.blockWidth / 2) % 16 == 0 ? 16 : (image.blockWidth / 2) % 16;
-		}
-		else
-		{
-			ret.Cycles[i].W = 16;
-		}
-
-		if ((i / ret.HCU_Width) == ret.HCU_Height - 1)
-		{
-			ret.Cycles[i].H = (image.blockHeight / 2) % 16 == 0 ? 16 : (image.blockHeight / 2) % 16;
-		}
-		else 
-		{
-			ret.Cycles[i].H = 16;
-		}
-	}
-
-	//DebugPrintPixels(ret);
-
 	countDCFrequent(ret);
 	ret.DC->Encode();
-	std::cout << std::endl;
 	countACFrequent(ret);
 	ret.AC->Encode();
 	std::sort(ret.AC_zero, ret.AC_zero + 16, SortByFreq2);
@@ -459,14 +499,14 @@ void HuffmanEncode::Serialize(huffman_node* node) {
 	//序列化哈夫曼树，下面注释掉的三句话可以打印 http://mshang.ca/syntree/ 能识别的语法树。
 	if (node != NULL) {
 		if (!node->leaf) {
-			printf_s("[Node ");
+			//printf_s("[Node ");
 			Serialize(node->left_child);
 			Serialize(node->right_child);
-			printf_s("]");
+			//printf_s("]");
 		}
 		else {
 			huffman_code.insert(std::make_pair(node->c, node->huffman_code));
-			printf_s("[%d]", node->c);
+			//printf_s("[%d]", node->c);
 		}
 	}
 }

@@ -51,6 +51,12 @@ struct Block {
 	}
 };
 
+struct HCUCycle
+{
+	byte H;
+	byte W;
+};
+
 struct BMPImage 
 {
 	uint height = 0;
@@ -60,6 +66,11 @@ struct BMPImage
 
 	uint blockHeight = 0;
 	uint blockWidth = 0;
+
+	uint HCU_Height;
+	uint HCU_Width;
+	uint HCU_Count;
+	HCUCycle* Cycles;
 };
 
 struct huffman_node {
@@ -70,11 +81,7 @@ struct huffman_node {
 	bool leaf = false;
 };
 
-struct HCUCycle
-{
-	byte H;
-	byte W;
-};
+
 
 class HuffmanEncode
 {
@@ -139,11 +146,6 @@ struct JBPDImage
 	uint ACScanSize = 0;
 	uint DCScanSize = 0;
 
-	uint HCU_Height;
-	uint HCU_Width;
-	uint HCU_Count;
-	HCUCycle* Cycles;
-
 
 	JBPDImage(BMPImage& in):_image(in)
 	{
@@ -157,6 +159,7 @@ struct JBPDImage
 
 };
 
+void reSampleBlock(BMPImage& image);
 JBPDImage BuildTrees(BMPImage& image);
 void DebugPrintPixels(JBPDImage& image);
 bool GetScanData(JBPDImage& input, std::vector<byte>& bitWriter);

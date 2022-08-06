@@ -40,6 +40,34 @@ BMPImage readImage(const std::wstring& filename) {
 		}
 	}
 	cximage.Destroy();
+	
+	//º∆À„HCU≤¢ÃÓ≥‰
+	image.HCU_Height = (image.blockHeight + 31) / 32;
+	image.HCU_Width = (image.blockWidth + 31) / 32;
+	image.Cycles = new HCUCycle[image.HCU_Height * image.HCU_Width + 1]{};
+	image.HCU_Count = image.HCU_Height * image.HCU_Width;
+
+	for (uint i = 0; i < image.HCU_Count; ++i)
+	{
+		if (((i + 1) % image.HCU_Width) == 0)
+		{
+			image.Cycles[i].W = (image.blockWidth / 2) % 16 == 0 ? 16 : (image.blockWidth / 2) % 16;
+		}
+		else
+		{
+			image.Cycles[i].W = 16;
+		}
+
+		if ((i / image.HCU_Width) == image.HCU_Height - 1)
+		{
+			image.Cycles[i].H = (image.blockHeight / 2) % 16 == 0 ? 16 : (image.blockHeight / 2) % 16;
+		}
+		else
+		{
+			image.Cycles[i].H = 16;
+		}
+	}
+
 	return image;
 }
 
@@ -233,8 +261,8 @@ void forwardDCT(const BMPImage& image) {
 	uint channelCount = 0;
 	for (uint y = 0; y < image.blockHeight; ++y) {
 		for (uint x = 0; x < image.blockWidth; ++x) {
-			//channelCount = image.blocks[y * image.blockWidth + x].isbase ? 3 : 1;
-			for (uint i = 0; i < 3; ++i) {
+			channelCount = image.blocks[y * image.blockWidth + x].isbase ? 3 : 1;
+			for (uint i = 0; i < channelCount; ++i) {
 				forwardDCTBlockComponent(image.blocks[y * image.blockWidth + x][i]);
 			}
 		}

@@ -28,18 +28,16 @@ bool SortByFreq4(freqzero x, freqzero y) {
 
 int wmain(int argc, wchar_t**argv)
 {
-    BMPImage in = readImage(L"E:\\vmvt\\op\\00002516_mmx.png");
+    BMPImage in = readImage(L"E:\\vmvt\\op\\still_509800701.png");
     //BMPImage in = readImage(L"F:\\scan2.png");
-	
 
     RGBToYCbCr(in);
+	reSampleBlock(in);
+
     forwardDCT(in);
     quantize(in);
 
 	JBPDImage image = BuildTrees(in);
-	//DebugPrintPixels(image);
-
-    
 
 	std::vector<byte> huffmanData;
     GetScanData(image, huffmanData);
