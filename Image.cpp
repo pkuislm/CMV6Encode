@@ -5,7 +5,6 @@
 
 BMPImage readImage(const std::wstring& filename) {
 	BMPImage image;
-
 	// open file
 	std::wcout << "Reading " << filename << "...\n";
 	CxImage cximage;
@@ -261,7 +260,7 @@ void forwardDCT(const BMPImage& image) {
 	uint channelCount = 0;
 	for (uint y = 0; y < image.blockHeight; ++y) {
 		for (uint x = 0; x < image.blockWidth; ++x) {
-			channelCount = image.blocks[y * image.blockWidth + x].isbase ? 3 : 1;
+			channelCount = image.blocks[y * image.blockWidth + x].isbase ? 3 : 1;//减少dct计算的块，给本来就很慢的程序提点速（
 			for (uint i = 0; i < channelCount; ++i) {
 				forwardDCTBlockComponent(image.blocks[y * image.blockWidth + x][i]);
 			}

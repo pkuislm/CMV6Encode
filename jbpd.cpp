@@ -217,15 +217,12 @@ void reSampleBlock(BMPImage& image)
 			{
 				Range(2, n)//BCU×ÝÏò
 				{
-					uint idx0 = _addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2 + m * _bcuW * 2 + n;
-					int* src = image.blocks[idx0][c + 1];
+					int* src = image.blocks[_addW + _bcuY * (_bcuW * 2 * 2) + _bcuX * 2 + m * _bcuW * 2 + n][c + 1];
 					Range(4, y)
 					{
 						Range(4, x)
 						{
-							uint idx1 = m * 32 + n * 4 + y * 8 + x % 8;
-							uint idx2 = (y * 2 + c) * 8 + x * 2;
-							tmp[idx1] = src[idx2];
+							tmp[m * 32 + n * 4 + y * 8 + x % 8] = src[(y * 2 + c) * 8 + x * 2];
 						}
 					}
 				}

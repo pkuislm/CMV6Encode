@@ -85,7 +85,6 @@ struct huffman_node {
 
 class HuffmanEncode
 {
-
 	std::map<uint, uint> huffman_table;
 	huffman_node* root;
 	uint* freq;
@@ -156,7 +155,6 @@ struct JBPDImage
 			AC_zero[i].numofzero = i;
 		}
 	}
-
 };
 
 void reSampleBlock(BMPImage& image);
