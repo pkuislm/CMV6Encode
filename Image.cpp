@@ -277,10 +277,12 @@ void quantizeBlockComponent(const QuantizationTable& qTable, int* const componen
 
 // quantize all MCUs
 void quantize(const BMPImage& image) {
+	uint channelCount = 0;
 	for (uint y = 0; y < image.blockHeight; ++y) {
 		for (uint x = 0; x < image.blockWidth; ++x) {
-			for (uint i = 0; i < 3; ++i) {
-				quantizeBlockComponent(*qTables100[i], image.blocks[y * image.blockWidth + x][i]);
+			channelCount = image.blocks[y * image.blockWidth + x].isbase ? 3 : 1;//减少量化计算的块，给本来就很慢的程序提点速（
+			for (uint i = 0; i < channelCount; ++i) {
+				quantizeBlockComponent(*qTablesCMV[i], image.blocks[y * image.blockWidth + x][i]);
 			}
 		}
 	}
